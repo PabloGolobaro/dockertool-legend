@@ -16,7 +16,7 @@ type DockerService interface {
 
 type dockerStatsApp struct {
 	log           *zap.SugaredLogger
-	mode          Mode
+	mode          *Mode
 	errCh         chan error
 	dockerService DockerService
 }

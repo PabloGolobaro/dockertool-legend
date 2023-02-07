@@ -2,27 +2,64 @@ package main
 
 import (
 	"github.com/pablogolobaro/dockertool-legend/internal/app"
-	"log"
+	"github.com/pablogolobaro/dockertool-legend/internal/config"
+	"github.com/pablogolobaro/dockertool-legend/internal/logger"
+	"github.com/pablogolobaro/dockertool-legend/internal/service/dockerStats"
+	"github.com/pablogolobaro/dockertool-legend/pkg/docker"
+	"go.uber.org/zap"
 	"sync"
 )
 
-func main() {
-	builder, err := app.NewAppBuilder()
-	if err != nil {
-		log.Fatal("Get builder error:", err)
-	}
+var (
+	log           *zap.SugaredLogger
+	mode          *app.Mode
+	dockerService app.DockerService
+	builder       app.AppBuilderInt
+)
 
-	apllication := builder.Build()
+func main() {
+
+	log.Info("Building Application")
+	application := builder.Logger(log).Mode(mode).DockerService(dockerService).Build()
 
 	var wg sync.WaitGroup
-
+	log.Info("Start Application")
 	wg.Add(1)
 	go func(application app.Apllication) {
 		application.Start()
 
 		defer wg.Done()
-	}(apllication)
+	}(application)
 
 	wg.Wait()
+	log.Info("Gracefully Stopped Application")
 
+}
+
+func init() {
+	var err error
+	log, err = logger.NewLogger()
+	if err != nil {
+		panic(err)
+	}
+
+	log.Debug("Creating DockerClient")
+
+	log.Debug("Get flags")
+	modeFlags, err := config.GetModeFlags()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Debugw("Got flags", "Flags", modeFlags)
+
+	mode = app.NewMode(modeFlags.Stream, modeFlags.Duration)
+
+	dockerClient, err := docker.NewDockerClient()
+	if err != nil {
+		log.Fatal(err)
+	}
+	dockerService = dockerStats.NewDockerStatsService(log, dockerClient)
+
+	builder = app.NewDockerAppBuilder()
 }

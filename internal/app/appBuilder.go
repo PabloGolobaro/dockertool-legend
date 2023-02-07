@@ -1,53 +1,48 @@
 package app
 
 import (
-	"github.com/pablogolobaro/dockertool-legend/internal/config"
 	"go.uber.org/zap"
 )
 
 type AppBuilderInt interface {
 	Build() Apllication
+	Logger(val *zap.SugaredLogger) AppBuilderInt
+	Mode(val *Mode) AppBuilderInt
+	DockerService(val DockerService) AppBuilderInt
+	ErrCh(val chan error) AppBuilderInt
 }
 
-type appBuilder struct {
-	log  *zap.SugaredLogger
-	mode Mode
-
-	errorCh chan error
+type dockerAppBuilder struct {
+	log           *zap.SugaredLogger
+	mode          *Mode
+	dockerService DockerService
+	errCh         chan error
 }
 
-func NewAppBuilder() (AppBuilderInt, error) {
-	development, err := zap.NewDevelopment()
-	if err != nil {
-		return nil, err
-	}
-
-	sugar := development.Sugar()
-	sugar.Debug("Builder get flags")
-	modeFlags, err := config.GetModeFlags()
-	if err != nil {
-		return nil, err
-	}
-
-	sugar.Infow("Flags", modeFlags)
-
-	mode := NewMode(modeFlags.Stream, modeFlags.Duration)
-
+func NewDockerAppBuilder() AppBuilderInt {
 	errorCh := make(chan error, 1)
-
-	sugar.Debug("Builder Created")
-	return &appBuilder{log: sugar, mode: mode, errorCh: errorCh}, nil
+	return &dockerAppBuilder{errCh: errorCh}
 }
 
-func (b appBuilder) Logger(val *zap.SugaredLogger) {
+func (b *dockerAppBuilder) Logger(val *zap.SugaredLogger) AppBuilderInt {
 	b.log = val
+	return b
 }
-
-func (b appBuilder) Mode(val Mode) {
+func (b *dockerAppBuilder) Mode(val *Mode) AppBuilderInt {
 	b.mode = val
+	return b
+}
+func (b *dockerAppBuilder) DockerService(val DockerService) AppBuilderInt {
+	b.dockerService = val
+	return b
 }
 
-func (b appBuilder) Build() Apllication {
+func (b *dockerAppBuilder) ErrCh(val chan error) AppBuilderInt {
+	b.errCh = val
+	return b
+}
 
-	return &dockerStatsApp{log: b.log, mode: b.mode, errCh: b.errorCh}
+func (b *dockerAppBuilder) Build() Apllication {
+
+	return &dockerStatsApp{log: b.log, mode: b.mode, errCh: b.errCh, dockerService: b.dockerService}
 }
