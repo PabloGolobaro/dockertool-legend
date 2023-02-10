@@ -3,7 +3,7 @@
 ## Simple tool which is aimed to maintain statistic over working docker containers
 
 ## How to start up project:
-- Start application without timer:
+- Start application without timer in stream mode:
 ``make run``
 
 ## Flags:
