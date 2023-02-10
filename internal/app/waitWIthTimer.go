@@ -29,7 +29,7 @@ func (d *dockerStatsApp) WaitWithoutTimer() {
 
 	select {
 	case <-stop:
-		d.log.Info("Stop collecting stats")
+		d.log.Debug("Stop collecting stats from wait")
 		d.dockerService.StopStatsStream()
 	case err := <-d.errCh:
 		d.log.Errorw("Stop collecting stats", "Error", err)
