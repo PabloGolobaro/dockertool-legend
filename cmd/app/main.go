@@ -59,7 +59,12 @@ func init() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	dockerService = dockerStats.NewDockerStatsService(log, dockerClient)
+
+	shtdwn := make(chan struct{}, 1)
+
+	consoleWriter := dockerStats.NewConsoleWriter(log, shtdwn, dockerClient)
+
+	dockerService = dockerStats.NewDockerStatsService(shtdwn, log, dockerClient, consoleWriter)
 
 	builder = app.NewDockerAppBuilder()
 }

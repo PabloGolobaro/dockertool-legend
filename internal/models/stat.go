@@ -1,6 +1,7 @@
 package models
 
 type Stats struct {
+	Name        string `json:"name,omitempty"`
 	MemoryStats struct {
 		MaxUsage int `json:"max_usage"`
 		Usage    int `json:"usage"`
