@@ -20,5 +20,5 @@ func (s *Stats) CalculateCPUUsage() float64 {
 }
 
 func (s *Stats) CalculateMemoryUsage() float64 {
-	return float64(s.MemoryStats.Usage) / float64(s.MemoryStats.MaxUsage) * 100
+	return float64(s.MemoryStats.Usage) / float64(s.MemoryStats.Limit) * 100
 }

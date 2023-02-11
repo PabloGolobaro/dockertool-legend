@@ -1,13 +1,23 @@
 package logger
 
-import "go.uber.org/zap"
+import (
+	"go.uber.org/zap"
+	"os"
+)
 
 func NewLogger() (*zap.SugaredLogger, error) {
-	development, err := zap.NewDevelopment()
+	var err error
+	var log *zap.Logger
+	if os.Getenv("MODE") == "dev" {
+		log, err = zap.NewDevelopment()
+	} else {
+		log, err = zap.NewProduction()
+	}
+
 	if err != nil {
 		return nil, err
 	}
 
-	sugar := development.Sugar()
+	sugar := log.Sugar()
 	return sugar, nil
 }
