@@ -10,7 +10,7 @@ type Apllication interface {
 
 type DockerService interface {
 	CollectStatsOnce() error
-	StartStatsStream() error
+	StartStatsStream(chan error) error
 	StopStatsStream()
 }
 
@@ -32,7 +32,7 @@ func (d *dockerStatsApp) Start() {
 	}
 
 	go func() {
-		err := d.dockerService.StartStatsStream()
+		err := d.dockerService.StartStatsStream(d.errCh)
 		if err != nil {
 			d.errCh <- err
 		}

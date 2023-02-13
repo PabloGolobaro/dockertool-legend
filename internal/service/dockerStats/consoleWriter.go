@@ -1,66 +1,70 @@
 package dockerStats
 
 import (
-	"fmt"
-	tm "github.com/buger/goterm"
 	"github.com/docker/docker/client"
-	"github.com/pablogolobaro/dockertool-legend/internal/models"
 	"go.uber.org/zap"
 	"sync"
 	"time"
 )
 
 type consoleWriter struct {
-	log      *zap.SugaredLogger
-	input    chan models.Stats
-	shtdwn   chan struct{}
-	statsMap map[string]models.Stats
+	log                    *zap.SugaredLogger
+	cli                    *client.Client
+	shutdownCh             chan struct{}
+	containerMap           map[string]struct{}
+	containerStatsChannels []containerStatsChannel
 	sync.WaitGroup
-	cli *client.Client
+	sync.Mutex
 }
 
-func NewConsoleWriter(log *zap.SugaredLogger, shtdwn chan struct{}, cli *client.Client) *consoleWriter {
-	statsMap := make(map[string]models.Stats)
-
-	input := make(chan models.Stats, 10)
-
-	return &consoleWriter{log: log, shtdwn: shtdwn, cli: cli, statsMap: statsMap, input: input}
+type containerStatsChannel struct {
+	statsCh chan string
+	ID      string
 }
 
-func (c *consoleWriter) StartWriteToConsole() {
+func NewConsoleWriter(log *zap.SugaredLogger, shutdownCh chan struct{}, cli *client.Client) *consoleWriter {
+	containerMap := make(map[string]struct{})
+	containerStatsChannels := make([]containerStatsChannel, 0)
+	return &consoleWriter{log: log, shutdownCh: shutdownCh, cli: cli, containerMap: containerMap, containerStatsChannels: containerStatsChannels}
+}
+
+func (c *consoleWriter) startWriteToConsole(errCh chan error) {
 	c.log.Debug("Start Console Writer")
+
+	newContainers, delContainers := c.startNewContainersController(errCh)
+
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 
+	c.Add(1)
+	defer c.Done()
+	defer close(delContainers)
 	for {
 
 		select {
-		case <-ticker.C:
-
-			tm.Clear()
-
-			table := tm.NewTable(0, 10, 5, ' ', 0)
-
-			fmt.Fprintf(table, "Container\tCPU %s\tMemory %s\n", "%", "%")
-
-			//c.log.Debugw("Writer reads map", "map", c.statsMap)
-			for _, stats := range c.statsMap {
-				fmt.Fprintf(table, "%s\t%.2f\t%.2f\n", stats.Name, stats.CalculateCPUUsage(), stats.CalculateMemoryUsage())
-
-			}
-			//tm.MoveCursorUp(7)
-
-			tm.Print(table)
-
-			tm.Flush()
-
-		case stats := <-c.input:
-			//c.log.Debugw("Writer input chanel", "stats", stats)
-			c.statsMap[stats.Name] = stats
-		case <-c.shtdwn:
-			c.Done()
+		case <-c.shutdownCh:
+			c.log.Debug("Stop Console Writer")
 			return
-		}
 
+		case containerChan := <-newContainers:
+			c.containerStatsChannels = append(c.containerStatsChannels, containerChan)
+
+		case <-ticker.C:
+			stats := make([]string, len(c.containerStatsChannels))
+
+			for i, inContainer := range c.containerStatsChannels {
+				stat, ok := <-inContainer.statsCh
+				if !ok {
+					c.containerStatsChannels[i] = c.containerStatsChannels[len(c.containerStatsChannels)-1]
+					c.containerStatsChannels = c.containerStatsChannels[:len(c.containerStatsChannels)-1]
+
+					delContainers <- inContainer.ID
+				} else {
+					stats = append(stats, stat)
+				}
+			}
+
+			writeToConsole(stats)
+		}
 	}
 }
