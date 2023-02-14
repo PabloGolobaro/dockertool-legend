@@ -10,7 +10,7 @@ type Apllication interface {
 
 type DockerService interface {
 	CollectStatsOnce() error
-	StartStatsStream(chan error) error
+	StartStatsStream(chan error)
 	StopStatsStream()
 }
 
@@ -31,12 +31,7 @@ func (d *dockerStatsApp) Start() {
 		return
 	}
 
-	go func() {
-		err := d.dockerService.StartStatsStream(d.errCh)
-		if err != nil {
-			d.errCh <- err
-		}
-	}()
+	go d.dockerService.StartStatsStream(d.errCh)
 
 	if d.mode.WithTimer {
 		d.WaitWithTimer()

@@ -4,6 +4,7 @@ import (
 	"github.com/pablogolobaro/dockertool-legend/internal/app"
 	"github.com/pablogolobaro/dockertool-legend/internal/config"
 	"github.com/pablogolobaro/dockertool-legend/internal/logger"
+	"github.com/pablogolobaro/dockertool-legend/internal/service/containerStreamer"
 	"github.com/pablogolobaro/dockertool-legend/internal/service/dockerStats"
 	"github.com/pablogolobaro/dockertool-legend/pkg/docker"
 	"go.uber.org/zap"
@@ -62,7 +63,7 @@ func init() {
 
 	shtdwn := make(chan struct{}, 1)
 
-	consoleWriter := dockerStats.NewConsoleWriter(log, shtdwn, dockerClient)
+	consoleWriter := containerStreamer.NewcontainerStreamer(log, shtdwn, dockerClient)
 
 	dockerService = dockerStats.NewDockerStatsService(shtdwn, log, dockerClient, consoleWriter)
 

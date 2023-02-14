@@ -1,4 +1,4 @@
-package dockerStats
+package containerStreamer
 
 import (
 	"context"
@@ -9,10 +9,10 @@ import (
 	"io"
 )
 
-func (c *consoleWriter) getStats(ctx context.Context) error {
+func (c *ContainerStreamer) GetStats(ctx context.Context) ([]string, error) {
 	containerList, err := c.cli.ContainerList(ctx, types.ContainerListOptions{})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	statsList := make([]string, 0, len(containerList))
@@ -20,18 +20,18 @@ func (c *consoleWriter) getStats(ctx context.Context) error {
 	for _, container := range containerList {
 		containerStats, err := c.cli.ContainerStats(ctx, container.ID, false)
 		if err != nil {
-			return err
+			return statsList, err
 		}
 
 		stat := models.Stats{Name: container.Image}
 		bytes, err := io.ReadAll(containerStats.Body)
 		if err != nil {
-			return err
+			return statsList, err
 		}
 
 		err = json.Unmarshal(bytes, &stat)
 		if err != nil {
-			return err
+			return statsList, err
 		}
 
 		oneTimeStat := fmt.Sprintf("%s\t%s\t%.2f\t%.2f\n", stat.Name, container.Image, stat.CalculateCPUUsage(), stat.CalculateMemoryUsage())
@@ -41,7 +41,5 @@ func (c *consoleWriter) getStats(ctx context.Context) error {
 		containerStats.Body.Close()
 	}
 
-	writeOnce(statsList)
-
-	return nil
+	return statsList, nil
 }

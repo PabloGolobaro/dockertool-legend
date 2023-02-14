@@ -1,4 +1,4 @@
-package dockerStats
+package containerStreamer
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func (c *consoleWriter) startNewContainersController(errCh chan error) (chan containerStatsChannel, chan string) {
+func (c *ContainerStreamer) startNewContainersController(errCh chan error) (chan containerStatsChannel, chan string) {
 	newContainers := make(chan containerStatsChannel)
 	delContainers := make(chan string)
 

@@ -1,4 +1,4 @@
-package dockerStats
+package console
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func writeToConsole(stats []string) {
+func WriteToConsole(stats []string) {
 	tm.Clear()
 
 	table := tm.NewTable(0, 11, 5, ' ', 0)
@@ -24,7 +24,7 @@ func writeToConsole(stats []string) {
 
 }
 
-func writeOnce(stats []string) {
+func WriteOnce(stats []string) {
 
 	table := tabwriter.NewWriter(os.Stdout, 0, 11, 5, ' ', 0)
 	fmt.Fprintf(table, "\nContainer Name\tImage\tCPU %s\tMemory %s\n", "%", "%")

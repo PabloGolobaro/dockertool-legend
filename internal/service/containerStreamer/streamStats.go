@@ -1,4 +1,4 @@
-package dockerStats
+package containerStreamer
 
 import (
 	"bufio"
@@ -9,7 +9,7 @@ import (
 	"github.com/pablogolobaro/dockertool-legend/internal/models"
 )
 
-func (c *consoleWriter) streamContainer(ctx context.Context, container types.Container) chan string {
+func (c *ContainerStreamer) streamContainer(ctx context.Context, container types.Container) chan string {
 	containerChan := make(chan string)
 
 	c.Add(1)

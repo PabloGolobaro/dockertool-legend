@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+option go_package = "./protoStats";
+
+package protoStats;
+
+service ContainerStatsService {
+  rpc getStatsStream(getStatsMessage) returns (stream Stats);
+}
+
+message getStatsMessage{}
+
+message Container{
+  string id = 1;
+  string name = 2;
+  string image = 3;
+}
+
+message ContainerStats{
+  Container container = 1;
+  float CPU = 2;
+  float Memory = 3;
+}
+
+message Stats {
+  repeated ContainerStats containerStats = 1;
+}
