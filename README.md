@@ -1,6 +1,6 @@
 # dockertool-legend
 
-## Simple tool which is aimed to maintain statistic over working docker containers and send it in stream to clients
+## gRPC service to maintain statistic over working docker containers and send it by streams to clients
 
 ### Features:
 - gRPC server Streaming
