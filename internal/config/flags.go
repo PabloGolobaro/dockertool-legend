@@ -2,21 +2,18 @@ package config
 
 import (
 	"flag"
-	"time"
 )
 
 type Flags struct {
-	Stream   bool
-	Duration time.Duration
+	Console bool
+	Port    int
 }
 
 func GetModeFlags() (Flags, error) {
-	stream := flag.Bool("stream", false, "Get one-time stats or get stats stream")
-	dur := flag.Int("dur", 0, "Duration of stream in seconds")
+	console := flag.Bool("console", false, "Output to StdOut")
+	port := flag.Int("port", 50051, "gRPC server port")
 
 	flag.Parse()
 
-	d := time.Duration(*dur)
-
-	return Flags{Stream: *stream, Duration: time.Duration(time.Second * d)}, nil
+	return Flags{Console: *console, Port: *port}, nil
 }

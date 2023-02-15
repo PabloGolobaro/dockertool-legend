@@ -1,16 +1,15 @@
-package containerStreamer
+package containerstreamer
 
 import (
 	"bufio"
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/docker/docker/api/types"
 	"github.com/pablogolobaro/dockertool-legend/internal/models"
 )
 
-func (c *ContainerStreamer) streamContainer(ctx context.Context, container types.Container) chan string {
-	containerChan := make(chan string)
+func (c *ContainerStreamer) streamContainer(ctx context.Context, container types.Container) chan models.Stats {
+	containerChan := make(chan models.Stats)
 
 	c.Add(1)
 
@@ -31,7 +30,7 @@ func (c *ContainerStreamer) streamContainer(ctx context.Context, container types
 
 		scanner := bufio.NewScanner(containerStats.Body)
 		for scanner.Scan() {
-			stats := models.Stats{Name: container.Image}
+			stats := models.Stats{ID: container.ID, Name: container.Image, Image: container.Image}
 
 			err = json.Unmarshal(scanner.Bytes(), &stats)
 			if err != nil {
@@ -39,15 +38,12 @@ func (c *ContainerStreamer) streamContainer(ctx context.Context, container types
 
 				return
 			}
-
-			oneTimeStat := fmt.Sprintf("%s\t%s\t%.2f\t%.2f\n", stats.Name, container.Image, stats.CalculateCPUUsage(), stats.CalculateMemoryUsage())
-
 			select {
 			case <-ctx.Done():
 				c.log.Debugw("Stream closed", "container", container.ID)
 
 				return
-			case containerChan <- oneTimeStat:
+			case containerChan <- stats:
 
 			}
 		}

@@ -1,43 +1,35 @@
 package app
 
 import (
+	"context"
+	"github.com/pablogolobaro/dockertool-legend/internal/config"
+	"github.com/pablogolobaro/dockertool-legend/internal/models"
 	"go.uber.org/zap"
 )
 
 type Apllication interface {
-	Start()
+	Start(ctx context.Context)
+	CollectStatsOnce() ([]models.Stats, error)
+	GetStreamChannel() (chan []models.Stats, chan struct{})
+	Error() chan error
 }
 
-type DockerService interface {
-	CollectStatsOnce() error
-	StartStatsStream(chan error)
-	StopStatsStream()
+type ContainerStreamer interface {
+	StartStreaming(ctx context.Context, errCh chan error) chan []models.Stats
+	GetStats(ctx context.Context) ([]models.Stats, error)
+	Wait()
 }
 
-type dockerStatsApp struct {
-	log           *zap.SugaredLogger
-	mode          *Mode
-	errCh         chan error
-	dockerService DockerService
+type statsApp struct {
+	log                  *zap.SugaredLogger
+	mode                 *config.Mode
+	errCh                chan error
+	containerStreamer    ContainerStreamer
+	streamsPool          []portStream
+	newPortStreamChannel chan portStream
 }
 
-func (d *dockerStatsApp) Start() {
-	d.log.Info("App starts collecting stats")
-	if !d.mode.stream {
-		err := d.dockerService.CollectStatsOnce()
-		if err != nil {
-			d.log.Errorw("error collecting stats one time", "Error", err)
-		}
-		return
-	}
-
-	go d.dockerService.StartStatsStream(d.errCh)
-
-	if d.mode.WithTimer {
-		d.WaitWithTimer()
-	} else {
-		d.WaitWithoutTimer()
-	}
-
-	d.log.Info("App ends collecting stats")
+type portStream struct {
+	statsCh  chan []models.Stats
+	cancelCh chan struct{}
 }

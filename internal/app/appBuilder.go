@@ -1,22 +1,23 @@
 package app
 
 import (
+	"github.com/pablogolobaro/dockertool-legend/internal/config"
 	"go.uber.org/zap"
 )
 
 type AppBuilderInt interface {
 	Build() Apllication
 	Logger(val *zap.SugaredLogger) AppBuilderInt
-	Mode(val *Mode) AppBuilderInt
-	DockerService(val DockerService) AppBuilderInt
+	Mode(val *config.Mode) AppBuilderInt
+	ContainerStreamer(val ContainerStreamer) AppBuilderInt
 	ErrCh(val chan error) AppBuilderInt
 }
 
 type dockerAppBuilder struct {
-	log           *zap.SugaredLogger
-	mode          *Mode
-	dockerService DockerService
-	errCh         chan error
+	log      *zap.SugaredLogger
+	mode     *config.Mode
+	streamer ContainerStreamer
+	errCh    chan error
 }
 
 func NewDockerAppBuilder() AppBuilderInt {
@@ -28,12 +29,13 @@ func (b *dockerAppBuilder) Logger(val *zap.SugaredLogger) AppBuilderInt {
 	b.log = val
 	return b
 }
-func (b *dockerAppBuilder) Mode(val *Mode) AppBuilderInt {
+func (b *dockerAppBuilder) Mode(val *config.Mode) AppBuilderInt {
 	b.mode = val
 	return b
 }
-func (b *dockerAppBuilder) DockerService(val DockerService) AppBuilderInt {
-	b.dockerService = val
+
+func (b *dockerAppBuilder) ContainerStreamer(val ContainerStreamer) AppBuilderInt {
+	b.streamer = val
 	return b
 }
 
@@ -43,6 +45,5 @@ func (b *dockerAppBuilder) ErrCh(val chan error) AppBuilderInt {
 }
 
 func (b *dockerAppBuilder) Build() Apllication {
-
-	return &dockerStatsApp{log: b.log, mode: b.mode, errCh: b.errCh, dockerService: b.dockerService}
+	return &statsApp{log: b.log, mode: b.mode, errCh: b.errCh, containerStreamer: b.streamer}
 }

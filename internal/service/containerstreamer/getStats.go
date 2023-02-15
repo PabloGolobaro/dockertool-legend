@@ -1,21 +1,20 @@
-package containerStreamer
+package containerstreamer
 
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"github.com/docker/docker/api/types"
 	"github.com/pablogolobaro/dockertool-legend/internal/models"
 	"io"
 )
 
-func (c *ContainerStreamer) GetStats(ctx context.Context) ([]string, error) {
+func (c *ContainerStreamer) GetStats(ctx context.Context) ([]models.Stats, error) {
 	containerList, err := c.cli.ContainerList(ctx, types.ContainerListOptions{})
 	if err != nil {
 		return nil, err
 	}
 
-	statsList := make([]string, 0, len(containerList))
+	statsList := make([]models.Stats, 0, len(containerList))
 
 	for _, container := range containerList {
 		containerStats, err := c.cli.ContainerStats(ctx, container.ID, false)
@@ -23,7 +22,7 @@ func (c *ContainerStreamer) GetStats(ctx context.Context) ([]string, error) {
 			return statsList, err
 		}
 
-		stat := models.Stats{Name: container.Image}
+		stat := models.Stats{ID: container.ID, Name: container.Image, Image: container.Image}
 		bytes, err := io.ReadAll(containerStats.Body)
 		if err != nil {
 			return statsList, err
@@ -34,9 +33,7 @@ func (c *ContainerStreamer) GetStats(ctx context.Context) ([]string, error) {
 			return statsList, err
 		}
 
-		oneTimeStat := fmt.Sprintf("%s\t%s\t%.2f\t%.2f\n", stat.Name, container.Image, stat.CalculateCPUUsage(), stat.CalculateMemoryUsage())
-
-		statsList = append(statsList, oneTimeStat)
+		statsList = append(statsList, stat)
 
 		containerStats.Body.Close()
 	}
