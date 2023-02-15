@@ -8,10 +8,15 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"log"
+	"os"
+	"os/signal"
 	"time"
 )
 
 func main() {
+	stop := make(chan os.Signal)
+	signal.Notify(stop)
+
 	flags, err := getFlags()
 	if err != nil {
 		log.Fatal(err)
@@ -28,10 +33,19 @@ func main() {
 	}
 	defer conn.Close()
 
+	go func() {
+		<-stop
+		fmt.Println("Stop signal received")
+		cancelFunc()
+	}()
+
 	getStatsStream(ctx, conn)
+
+	fmt.Println("Exit client")
 }
 
 func getStatsStream(ctx context.Context, conn grpc.ClientConnInterface) {
+
 	client := pb.NewContainerStatsServiceClient(conn)
 
 	stream, err := client.GetStatsStream(ctx, &pb.GetStatsMessage{})
@@ -45,8 +59,8 @@ func getStatsStream(ctx context.Context, conn grpc.ClientConnInterface) {
 			return
 		}
 		console.WriteToConsoleClient(stats)
-	}
 
+	}
 }
 
 func chooseContext(timeout int) (context.Context, context.CancelFunc) {

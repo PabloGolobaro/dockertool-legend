@@ -66,6 +66,6 @@ func (m *mockStreamer) GetStats(ctx context.Context) ([]models.Stats, error) {
 	return stats, nil
 }
 
-func (m *mockStreamer) Wait() {
+func (m *mockStreamer) WaitForAll() {
 	time.Sleep(time.Second)
 }

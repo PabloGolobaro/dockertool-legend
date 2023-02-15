@@ -8,8 +8,8 @@ import (
 
 func (c *ContainerStreamer) StartStreaming(ctx context.Context, errCh chan error) chan []models.Stats {
 	c.log.Debug("Start Streamer")
-
 	streamChannel := make(chan []models.Stats)
+	c.Add(1)
 
 	go func() {
 		newContainers, delContainers := c.startNewContainersController(errCh)
@@ -17,12 +17,10 @@ func (c *ContainerStreamer) StartStreaming(ctx context.Context, errCh chan error
 		ticker := time.NewTicker(time.Second)
 		defer ticker.Stop()
 
-		c.Add(1)
 		defer c.Done()
 		defer close(delContainers)
 		defer close(streamChannel)
 		for {
-
 			select {
 			case <-ctx.Done():
 				c.log.Debug("Stop Streamer")
@@ -32,7 +30,7 @@ func (c *ContainerStreamer) StartStreaming(ctx context.Context, errCh chan error
 				c.containerStatsChannels = append(c.containerStatsChannels, containerChan)
 
 			case <-ticker.C:
-				stats := make([]models.Stats, len(c.containerStatsChannels))
+				stats := make([]models.Stats, 0, len(c.containerStatsChannels))
 
 				for i, inContainer := range c.containerStatsChannels {
 					stat, ok := <-inContainer.statsCh

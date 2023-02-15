@@ -40,18 +40,18 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	grpcServer = grpc.NewServer(grpc.StreamInterceptor(server.StatsServerStreamInterceptor))
+	grpcServer = grpc.NewServer()
 
 	pb.RegisterContainerStatsServiceServer(grpcServer, &server.StatsServer{App: application, Log: log})
 
 	var wg sync.WaitGroup
+
 	go func() {
 		wg.Add(1)
-
 		log.Info("Start Application")
 		application.Start(cwc)
 
-		defer wg.Done()
+		wg.Done()
 	}()
 
 	go startgRPCServer(lis)
@@ -59,13 +59,12 @@ func main() {
 	select {
 	case <-sigCh:
 		log.Info("Stop signal received")
-
 	case err := <-application.Error():
 		log.Errorw("Stop collecting stats", "Error", err)
-
 	}
 
 	grpcServer.GracefulStop()
+
 	cancel()
 
 	wg.Wait()

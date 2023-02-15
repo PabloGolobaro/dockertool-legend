@@ -27,6 +27,7 @@ func (s *StatsServer) GetStatsStream(message *pb.GetStatsMessage, stream pb.Cont
 			close(cancel)
 			return nil
 		case stats := <-channel:
+
 			resultStats := &pb.Stats{}
 
 			for _, stat := range stats {

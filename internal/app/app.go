@@ -17,7 +17,7 @@ type Apllication interface {
 type ContainerStreamer interface {
 	StartStreaming(ctx context.Context, errCh chan error) chan []models.Stats
 	GetStats(ctx context.Context) ([]models.Stats, error)
-	Wait()
+	WaitForAll()
 }
 
 type statsApp struct {
