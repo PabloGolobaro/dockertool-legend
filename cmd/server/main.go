@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	pb "github.com/pablogolobaro/dockertool-legend/internal/api/protoStats"
 	"github.com/pablogolobaro/dockertool-legend/internal/api/server"
 	"github.com/pablogolobaro/dockertool-legend/internal/app"
@@ -11,6 +12,7 @@ import (
 	"github.com/pablogolobaro/dockertool-legend/pkg/docker"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"net"
 	"os"
 	"os/signal"
@@ -23,6 +25,11 @@ var (
 	builder           app.AppBuilderInt
 	containerStreamer app.ContainerStreamer
 	grpcServer        *grpc.Server
+)
+
+const (
+	crtFile = "./certs/server.crt"
+	keyFile = "./certs/server.key"
 )
 
 func main() {
@@ -40,7 +47,18 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	grpcServer = grpc.NewServer()
+	certificate, err := tls.LoadX509KeyPair(crtFile, keyFile)
+	if err != nil {
+		log.Fatalf("failed to load key pair: %v", err)
+	}
+
+	options := []grpc.ServerOption{
+		grpc.Creds(credentials.NewServerTLSFromCert(&certificate)),
+		grpc.UnaryInterceptor(server.EnsureValidBasicCredentials),
+		grpc.StreamInterceptor(server.StatsServerStreamInterceptor),
+	}
+
+	grpcServer = grpc.NewServer(options...)
 
 	pb.RegisterContainerStatsServiceServer(grpcServer, &server.StatsServer{App: application, Log: log})
 

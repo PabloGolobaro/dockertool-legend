@@ -5,7 +5,14 @@
 ### Features:
 - gRPC server Streaming
 - Graceful shutdown
+- Unary/Stream interceptors
+- gRPC Basic authorization simple implementation
+- gRPC server-side TLS implementation with self-signed certificates
 - Hex architecture pattern
+
+## Basic Auth credentials by default:
+- username : admin
+- password : admin
 
 ## How to start up project:
 - Start server with default parameters:

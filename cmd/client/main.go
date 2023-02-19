@@ -6,14 +6,31 @@ import (
 	pb "github.com/pablogolobaro/dockertool-legend/internal/api/protoStats"
 	"github.com/pablogolobaro/dockertool-legend/pkg/console"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/credentials"
 	"log"
 	"os"
 	"os/signal"
 	"time"
 )
 
+const (
+	hostname = "localhost"
+	crtFile  = "./auth/server.crt"
+	username = "admin"
+	password = "admin"
+)
+
 func main() {
+	creds, err := credentials.NewClientTLSFromFile(crtFile, hostname)
+	if err != nil {
+		log.Fatalf("failed to load credentials: %v", err)
+	}
+
+	auth := basicAuth{
+		username: username,
+		password: password,
+	}
+
 	stop := make(chan os.Signal)
 	signal.Notify(stop)
 
@@ -26,7 +43,8 @@ func main() {
 
 	conn, err := grpc.Dial(
 		fmt.Sprintf("localhost:%v", flags.Port),
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithPerRPCCredentials(auth),
+		grpc.WithTransportCredentials(creds),
 	)
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)

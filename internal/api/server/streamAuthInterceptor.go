@@ -2,6 +2,7 @@ package server
 
 import (
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 	"log"
 	"time"
 )
@@ -29,6 +30,14 @@ func newWrappedStream(s grpc.ServerStream) grpc.ServerStream {
 func StatsServerStreamInterceptor(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 	log.Println("====== [Server Stream Interceptor] ",
 		info.FullMethod)
+	md, ok := metadata.FromIncomingContext(ss.Context())
+	if !ok {
+		return errMissingMetadata
+	}
+
+	if !valid(md["authorization"]) {
+		return errInvalidToken
+	}
 	err := handler(srv, newWrappedStream(ss))
 	if err != nil {
 		log.Printf("RPC failed with error %v", err)
